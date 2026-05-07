@@ -1,0 +1,19 @@
+{
+  "name": "@metricgram/shared-types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types for Metricgram backend and frontend",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+   "devDependencies": {
+     "typescript": "^5.9.0",
+     "zod": "^3.22.0"
+   },
+   "peerDependencies": {
+     "zod": "^3.22.0"
+   }
+}

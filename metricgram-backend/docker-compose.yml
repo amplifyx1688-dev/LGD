@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # 資料庫：PostgreSQL 16
+  postgres:
+    image: postgres:16-alpine
+    container_name: metricgram-db
+    environment:
+      POSTGRES_USER: metricgram
+      POSTGRES_PASSWORD: metricgram_dev_2024
+      POSTGRES_DB: metricgram
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metricgram -d metricgram"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - metricgram
+
+  # Redis：快取與任務佇列
+  redis:
+    image: redis:7-alpine
+    container_name: metricgram-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - metricgram
+
+  # 後端 API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: metricgram-api
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://metricgram:metricgram_dev_2024@postgres:5432/metricgram
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: development
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+    command: npm run dev
+    networks:
+      - metricgram
+
+  # Telegram Bot 獨立容器
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: metricgram-bot
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://metricgram:metricgram_dev_2024@postgres:5432/metricgram
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+    command: npm run bot
+    networks:
+      - metricgram
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  metricgram:
+    driver: bridge

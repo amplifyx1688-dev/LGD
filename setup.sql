@@ -1,0 +1,3 @@
+CREATE DATABASE metricgram;
+CREATE USER metricgram WITH PASSWORD 'Aa878787';
+GRANT ALL PRIVILEGES ON DATABASE metricgram TO metricgram;

@@ -1,0 +1,524 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 1. MODULES - 模塊管理
+// ============================================
+model Module {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique // boot/activity/broadcast/night/verify/checkin/forward/dice/carousel/clean
+  displayName String?
+  description String?
+
+  // 模塊開關
+  isEnabled           Boolean   @default(false)
+  isGlobalEnabled     Boolean   @default(false)
+
+  // 配置結構驗證（JSON Schema）
+  configSchema        Json?     @db.Json
+
+  // 依賴關係
+  dependencies        Json      @db.Json @default("[]") // ["auth", "groups"]
+
+  // 排序
+  sortOrder           Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  configs ModuleConfig[]
+}
+
+model ModuleConfig {
+  id        Int      @id @default(autoincrement())
+  moduleId  Int
+  groupId   Int?
+
+  // 配置值 JSON
+  configJson Json @db.Json @default("{}")
+
+  // 是否被特定群組覆蓋
+  isOverridden Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  module  Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  group   Group?  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, groupId])
+  @@index([groupId])
+}
+
+// ============================================
+// 2. USERS - 用戶表
+// ============================================
+model User {
+  id            Int      @id @default(autoincrement())
+  telegramId    BigInt   @unique
+  username      String?
+  firstName     String
+  lastName      String?
+  photoUrl      String?
+
+  // 積分系統
+  points                Int      @default(0)
+  totalPointsEarned     Int      @default(0)
+  totalPointsSpent      Int      @default(0)
+
+  // 簽到
+  lastCheckinAt         DateTime?
+  checkinStreak         Int      @default(0)
+  checkinCount          Int      @default(0)
+
+  // 錢包
+  balanceUsdt           Decimal  @db.Decimal(12, 4) @default(0)
+  walletAddress         String?
+
+  // 驗證狀態
+  isVerified            Boolean  @default(false)
+  verifiedAt            DateTime?
+
+  // 黑名單
+  isBlacklisted         Boolean  @default(false)
+  blacklistReason       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  groups               Group[]
+  ownedGroups          Group[]            @relation("GroupOwner")
+  checkins             Checkin[]
+  pointsTransactions   PointsTransaction[]
+  walletTransactions   WalletTransaction[]
+  wallet               UserWallet?
+  diceGamesAsHost      DiceGame[]         @relation("HostGames")
+  diceParticipations   DiceParticipant[]
+  wheelSpins          WheelSpin[]
+}
+
+// ============================================
+// 3. GROUPS - 群組表
+// ============================================
+model Group {
+  id                 Int      @id @default(autoincrement())
+  telegramChatId     BigInt   @unique
+  title              String   @db.VarChar(500)
+  username           String?
+
+  // 綁定管理員
+  ownerUserId        Int
+  owner              User    @relation("GroupOwner", fields: [ownerUserId], references: [id])
+
+  // 模塊開關 JSON
+  modulesEnabled     Json      @db.Json @default("{\"boot\":true,\"activity\":false,\"broadcast\":false,\"night\":false,\"verify\":false,\"checkin\":false,\"forward\":false,\"dice\":false,\"carousel\":false,\"clean\":false}")
+
+  // 骰子設置
+  diceSettings       Json      @db.Json @default("{\"commissionRate\":0.05,\"minBet\":1,\"maxBet\":1000,\"gameType\":\"niuniu\"}")
+
+  // 輪播設置
+  carouselSettings   Json      @db.Json @default("{\"intervalSeconds\":5,\"startIndex\":0,\"enabledChannels\":[\"ad\",\"chat\",\"checkin\"]}")
+
+  // 驗證設置
+  verifyJoinEnabled      Boolean @default(false)
+  verifyPrivateEnabled   Boolean @default(false)
+  verifyChannelEnabled   Boolean @default(false)
+
+  // 簽到設置
+  checkinEnabled         Boolean @default(false)
+  checkinReward          Int     @default(1)
+
+  // 輪播設置
+  carouselEnabled        Boolean @default(false)
+  carouselLastIndex      Int     @default(0)
+  carouselLastSentAt     DateTime?
+  carouselInterval       Int     @default(5)
+
+  // 清潔設置
+  cleanEnabled           Boolean @default(false)
+  cleanIntervalMinutes   Int     @default(5)
+
+  // 骰子設置
+  diceEnabled            Boolean @default(false)
+
+  isActive               Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users                 User[]
+  configs               ModuleConfig[]
+  checkins              Checkin[]
+  diceGames             DiceGame[]
+  carouselContents      CarouselContent[]
+  wheelSpins           WheelSpin[]
+}
+
+// ============================================
+// 4. CHECKINS - 簽到記錄
+// ============================================
+model Checkin {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  groupId       Int
+  telegramMessageId BigInt?
+
+  pointsEarned  Int
+  streakBefore  Int?
+  streakAfter   Int?
+
+  checkedAt     DateTime @default(now())
+
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, checkedAt])
+  @@index([userId])
+  @@index([groupId])
+  @@index([checkedAt])
+}
+
+// ============================================
+// 5. POINTS_TRANSACTIONS - 積分流水
+// ============================================
+model PointsTransaction {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  type          String   // checkin/win/lose/commission/transfer/wheel/redpacket
+  amount        Int
+  balanceAfter  Int
+
+  // 關聯
+  gameId        Int?
+  game          DiceGame? @relation(fields: [gameId], references: [id])
+  referenceId   Int?
+
+  metadata      Json      @db.Json @default("{}")
+
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type])
+}
+
+// ============================================
+// 6. DICE_GAMES - 骰子遊戲房間
+// ============================================
+model DiceGame {
+  id            Int      @id @default(autoincrement())
+  roomId        String   @unique
+
+  groupId       Int
+  group         Group    @relation(fields: [groupId], references: [id])
+  gameType      String   @default("niuniu") // niuniu/classic
+  betMode       String   @default("normal")  // normal/double
+
+  minBetUsdt    Decimal  @db.Decimal(10, 4) @default(0)
+  maxBetUsdt    Decimal? @db.Decimal(10, 4)
+
+  // 莊家資訊
+  hostUserId    Int
+  hostBetUsdt   Decimal  @db.Decimal(10, 4) @default(0)
+  hostDiceJson  Json     @db.Json // [1,2,3,4,5]
+  hostResult    Json?
+  hostPayoutMultiplier Decimal @db.Decimal(3, 2) @default(0)
+
+  // 狀態
+  status        DiceGameStatus @default(waiting)
+
+  // 時間戳
+  startedAt     DateTime?
+  settledAt     DateTime?
+  closedAt      DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  host     User              @relation("HostGames", fields: [hostUserId], references: [id])
+  participants DiceParticipant[]
+  walletTransactions WalletTransaction[]
+  pointsTransactions PointsTransaction[]
+
+  @@index([groupId])
+  @@index([status])
+  @@index([roomId])
+}
+
+model DiceParticipant {
+  id         Int      @id @default(autoincrement())
+  gameId     Int
+  userId     Int
+
+  betUsdt    Decimal  @db.Decimal(10, 4) @default(0)
+  betMultiplier Int   @default(1) // 1=平倍, 2=翻倍
+
+  playerDiceJson Json?   @db.Json
+  playerResult   Json?
+  payoutUsdt     Decimal? @db.Decimal(10, 4)
+  result         String? // win/lose
+
+  joinedAt   DateTime @default(now())
+
+  game   DiceGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, userId])
+  @@index([userId])
+}
+
+enum DiceGameStatus {
+  waiting
+  betting
+  rolling
+  settling
+  closed
+}
+
+// ============================================
+// 7. USER_WALLETS - 錢包餘額（可選，與 User.balanceUsdt 冗餘但便於統計）
+// ============================================
+model UserWallet {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @unique
+  balanceUsdt       Decimal  @db.Decimal(12, 4) @default(0)
+  totalDeposited    Decimal  @db.Decimal(12, 4) @default(0)
+  totalWithdrawn    Decimal  @db.Decimal(12, 4) @default(0)
+  walletAddress     String?
+  updatedAt         DateTime @updatedAt
+  createdAt         DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// 8. WALLET_TRANSACTIONS - 錢包流水
+// ============================================
+model WalletTransaction {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+
+  type          String   // deposit/withdraw/win/lose/commission/checkin
+  amount        Decimal  @db.Decimal(10, 4) @default(0)
+  balanceBefore Decimal  @db.Decimal(12, 4) @default(0)
+  balanceAfter  Decimal  @db.Decimal(12, 4) @default(0)
+
+  // 關聯
+  gameId        Int?
+  game          DiceGame? @relation(fields: [gameId], references: [id])
+  txHash       String?  // 鏈上交易哈希
+
+  status        String   @default("completed") // pending/completed/failed
+  note         String?
+
+  createdAt    DateTime @default(now())
+
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type])
+}
+
+// ============================================
+// 9. CAROUSEL_CONTENT - 輪播內容配置
+// ============================================
+model CarouselContent {
+  id            Int      @id @default(autoincrement())
+  groupId       Int?
+  module        String   @default("carousel")
+
+  contentType   String   // advertisement/chat/signin/gambling/dice
+  contentKey    String   // 唯一標識：廣告版-001
+
+  contentJson   Json     @db.Json // 完整消息內容（圖片、文字、按鈕）
+
+  // 觸發條件
+  triggerType   String   @default("timer") // button_click/timer/keyword
+  triggerConfig Json?    @db.Json @default("{}")
+
+  // 排序與激活
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  priority      Int      @default(0)
+
+  // 統計
+  sendCount     Int      @default(0)
+  lastSentAt    DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  group      Group?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, contentKey])
+  @@index([contentKey])
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+// ============================================
+// 10. BUTTON_HANDLERS - 按鈕處理器映射
+// ============================================
+model ButtonHandler {
+  id                    Int      @id @default(autoincrement())
+  handlerKey           String   @unique // spin_wheel, do_signin
+  handlerName          String   // 函數名：handleSpinWheel
+  module               String
+  description          String?
+
+  // 參數結構
+  paramSchema          Json?     @db.Json
+
+  // 權限控制
+  requiredPoints       Int      @default(0)
+  requiredBalance      Decimal? @db.Decimal(10, 4)
+
+  // 頻率限制
+  rateLimitCount       Int      @default(1)
+  rateLimitSeconds     Int      @default(0)
+
+  // 狀態
+  isActive             Boolean  @default(true)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([module])
+  @@index([handlerKey])
+}
+
+// ============================================
+// 11. SCHEDULED_TASKS - 定時任務
+// ============================================
+model ScheduledTask {
+  id           Int      @id @default(autoincrement())
+  taskName     String   @unique
+
+  // 定時規則（Cron 表達式）
+  cronExpression String? // 0 8,22 * * *
+
+  // 任務內容
+  taskType     String   // carousel/broadcast/clean/night
+  taskConfig   Json     @db.Json @default("{}")
+
+  // 執行記錄
+  lastRunAt    DateTime?
+  lastRunStatus String? // success/failed
+  lastRunError String?
+
+  isEnabled    Boolean  @default(true)
+  maxConcurrentRuns Int @default(1)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ============================================
+// 12. SYSTEM_LOGS - 系統日誌（所有模塊共享）
+// ============================================
+model SystemLog {
+  id          Int      @id @default(autoincrement())
+
+  // 來源
+  module      String   // carousel/dice/checkin/...
+  source      String   // frontend/backend/bot
+
+  // 級別
+  level       String   // DEBUG/INFO/WARNING/ERROR
+
+  // 內容
+  action      String?
+  message     String   @db.Text
+
+  metadata    Json      @db.Json @default("{}")
+
+  // 上下文（可選）
+  userId      Int?
+  groupId     Int?
+  telegramChatId    BigInt?
+  telegramMessageId BigInt?
+
+  ipAddress   String?  @db.Inet
+  userAgent   String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([module])
+  @@index([level])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+// ============================================
+// 13. GAME_SETTINGS - 遊戲設置（骰子等功能配置）
+// ============================================
+model GameSetting {
+  id         Int      @id @default(autoincrement())
+  groupId    Int?
+
+  settingsKey String   // commission_rate, multipliers, min_bet...
+  settingsValue Json  @db.Json @default("{}")
+
+  isGlobal   Boolean  @default(false)
+  priority   Int      @default(0)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([groupId, settingsKey])
+  @@index([settingsKey])
+}
+
+// ============================================
+// 14. BROADCAST_QUEUE - 廣播隊列
+// ============================================
+model BroadcastQueue {
+  id            Int      @id @default(autoincrement())
+  groupId       Int?
+
+  messageType   String   // noon/red_envelope/temp
+  contentJson   Json     @db.Json
+
+  // 定時設置
+  scheduledAt   DateTime?
+  timeWindowStart String?
+  timeWindowEnd   String?
+
+  status        String   @default("pending") // pending/sent/failed/cancelled
+  sentAt        DateTime?
+  errorMessage  String?
+
+  createdAt     DateTime @default(now())
+}
+
+// ============================================
+// 15. WHEEL_SPINS - 輪盤記錄
+// ============================================
+model WheelSpin {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  groupId   Int
+
+  prizeType String
+  prizeAmount Decimal? @db.Decimal(10, 4)
+
+  createdAt DateTime @default(now())
+
+  user  User @relation(fields: [userId], references: [id])
+  group Group @relation(fields: [groupId], references: [id])
+}

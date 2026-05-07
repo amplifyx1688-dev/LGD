@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 13% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 15%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 13% 15%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 13% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
+    --radius: 0.625rem;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 9% 26%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 220 13% 15%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217 91% 60%;
+  }
+
+  body {
+    @apply bg-light text-foreground;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-shadowy-300 ring-1 ring-inset ring-shadowy-100 transition hover:bg-light hover:text-primary hover:shadow-sm;
+  }
+
+  .nav-item {
+    @apply text-shadowy-300 overflow-hidden hover:bg-light flex items-center gap-x-3 rounded-xl mb-1 py-2 px-4 text-sm leading-6 font-medium transition;
+  }
+
+  .nav-item-active {
+    @apply text-dark overflow-hidden bg-light rounded-xl mb-1 flex items-center gap-x-3 py-2 px-4 text-sm leading-6 font-medium;
+  }
+
+  .page-header {
+    @apply text-2xl font-bold text-primary sm:text-3xl sm:tracking-tight;
+  }
+
+  .page-description {
+    @apply text-base mt-2 text-shadowy-200;
+  }
+
+  .card-metric {
+    @apply rounded-lg text-primary ring-2 ring-primary px-3 py-3 flex items-center gap-3 overflow-hidden md:flex-col md:items-start md:gap-1;
+  }
+
+  .data-table th {
+    @apply pr-2 py-2 font-semibold text-shadowy-300 whitespace-nowrap text-sm;
+  }
+
+  .data-table td {
+    @apply py-2 align-middle text-shadowy-300 px-2 text-sm;
+  }
+
+  .data-table tr {
+    @apply border-t hover:bg-gray-50 transition;
+  }
+
+  .form-input {
+    @apply w-full rounded-3xl border-0 bg-white px-4 py-3 text-sm text-shadowy-300 placeholder:text-shadowy-200 ring-1 ring-inset ring-shadowy-100 focus:shadow-lg focus:ring-2 focus:ring-inset focus:ring-primary focus:outline-none;
+  }
+
+  .form-textarea {
+    @apply w-full rounded-xl border-0 bg-white px-4 py-3 text-sm text-shadowy-300 placeholder:text-shadowy-200 ring-1 ring-inset ring-shadowy-100 focus:shadow-lg focus:ring-2 focus:ring-inset focus:ring-primary focus:outline-none resize-none;
+  }
+
+  .form-select {
+    @apply rounded-3xl border-0 bg-white px-4 py-3 pr-9 text-sm text-shadowy-300 ring-1 ring-inset ring-shadowy-100 focus:shadow-lg focus:ring-2 focus:ring-inset focus:ring-primary focus:outline-none;
+  }
+}
