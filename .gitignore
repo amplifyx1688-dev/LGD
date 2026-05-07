@@ -60,9 +60,9 @@ docker-compose.override.yml
 *.rar
 
 # Extracted web pages (not part of source)
-Telegram*提取網頁/
-Telegram*/**/Files/
-Kimi_Agent_Telegram*.zip
+**/Telegram*提取網頁/
+**/Telegram*/*
+!**/Telegram*/.gitkeep
 
 # Frontend clone (if separate project)
  Telegram登录网页克隆/
