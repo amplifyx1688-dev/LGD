@@ -34,7 +34,16 @@ export async function initBot() {
   // 3. 設置回調查詢處理器
   await setupCallbacks();
 
-  // 4. 全局錯誤處理
+  // 4. 註冊驗證處理器
+  try {
+    const { registerVerifyHandlers } = await import('@/bot/callbacks/verifyHandlers');
+    registerVerifyHandlers();
+    logger.info('Verify handlers registered');
+  } catch (e) {
+    logger.error('Failed to register verify handlers', { error: e });
+  }
+
+  // 5. 全局錯誤處理
   bot.catch(errorMiddleware);
 
   // 5. 啟動 Bot

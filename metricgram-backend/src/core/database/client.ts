@@ -31,4 +31,4 @@ prisma.$on('warn', (e) => {
 // 生命周期鉤子
 prisma.$connect();
 
-export default prisma;
+export { prisma };

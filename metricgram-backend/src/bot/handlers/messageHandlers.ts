@@ -6,6 +6,9 @@
 import { Telegraf, Context } from 'telegraf';
 import { logger } from '@/core/utils/logger';
 import { diceMessageHandler } from './diceMessageHandler';
+import { verifyTrigger } from '@/modules/verify/trigger';
+import { bot } from '../index';
+import { prisma } from '@/core/database/client';
 
 /**
  * 注冊所有消息處理器
@@ -129,18 +132,59 @@ async function handleMyChatMember(ctx: Context) {
  */
 async function handleChatMember(ctx: Context) {
   const { chat_member, from } = ctx.update;
-  
+
+  // 限制只處理用戶加入群組（而非機器人）
+  if (chat_member.from === undefined) {
+    return;
+  }
+
   // 用戶加入群組 → 觸發驗證流程
-  if (chat_member.new_chat_member.status === 'member' && 
-      chat_member.old_chat_member.status !== 'member') {
-    
+  if (
+    chat_member.new_chat_member.status === 'member' &&
+    chat_member.old_chat_member.status !== 'member'
+  ) {
     const userId = chat_member.from.id;
     const chatId = chat_member.chat.id;
-    
+
     logger.info('User joined group', { userId, chatId });
-    
-    // 觸發驗證歡迎消息
-    // await verifyService.sendWelcomeMessage(userId, chatId);
+
+    // 1. 查找群組數據庫記錄
+    const group = await prisma.group.findFirst({
+      where: { telegramChatId: chatId.toString() }
+    });
+
+    if (!group) {
+      logger.debug('Group not found in database', { chatId });
+      return;
+    }
+
+    // 2. 檢查群組是否啟用入群驗證
+    if (!group.verifyJoinEnabled) {
+      logger.debug('Group verification not enabled', { groupId: group.id });
+      return;
+    }
+
+    // 3. 觸發驗證流程
+    const result = await verifyTrigger.triggerJoinVerification(
+      userId,
+      group.id,
+      bot
+    );
+
+    if (result.triggered) {
+      // 在群組發送提示消息
+      try {
+        await bot.telegram.sendMessage(
+          chatId,
+          `🔐 <b>安全提示</b>\n新成員 ${ctx.from?.first_name || '用戶'} 正在接受驗證，請稍候...`,
+          { parse_mode: 'HTML' }
+        );
+      } catch (error) {
+        logger.error('Failed to send verification prompt', { error });
+      }
+    } else {
+      logger.debug('Verification not triggered', { reason: result.message });
+    }
   }
 }
 

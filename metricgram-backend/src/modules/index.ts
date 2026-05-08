@@ -9,3 +9,5 @@ export * from './activity/service';
 export * from './night/service';
 export * from './clean/service';
 export * from './dashboard/service';
+export * from './verify/service';
+export * from './verify/trigger';

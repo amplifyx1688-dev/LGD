@@ -469,3 +469,42 @@ export const RANK_ORDER: DicePointType[] = [
   DicePointType.NIU_1,
   DicePointType.PAIR
 ];
+
+/**
+ * 活動類型枚舉
+ */
+export enum ActivityType {
+  LOTTERY = 'lottery',
+  STREAK = 'streak',
+  RANKING = 'ranking',
+  ACCUMULATIVE = 'accumulative'
+}
+
+/**
+ * 活動參與者狀態
+ */
+export interface Activity {
+  id: number;
+  title: string;
+  type: ActivityType;
+  startDate: Date;
+  endDate: Date;
+  rules: Record<string, any>;
+  rewards: Record<string, any>;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * 活動參與記錄
+ */
+export interface ActivityParticipant {
+  id: number;
+  activityId: number;
+  userId: number;
+  progress: Record<string, any>;
+  joinedAt: Date;
+  completedAt?: Date;
+  rewardGiven: boolean;
+}

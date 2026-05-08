@@ -16,7 +16,11 @@ import { carouselRoutes } from '@/modules/carousel/routes';
 import { checkinRoutes } from '@/modules/checkin/routes';
 import { diceRoutes } from '@/modules/dice/routes';
 import { dashboardRoutes } from '@/modules/dashboard/routes';
-// import other routes...
+import { nightRoutes } from '@/modules/night/routes';
+import { broadcastRoutes } from '@/modules/broadcast/routes';
+import { verifyRoutes } from '@/modules/verify/routes';
+import { forwardRoutes } from '@/modules/forward/routes';
+import { activityRoutes } from '@/modules/activity/routes';
 
 // 驗證配置
 validateConfig();
@@ -76,6 +80,11 @@ app.use(`/api/${config.apiVersion}/carousel`, authMiddleware, carouselRoutes);
 app.use(`/api/${config.apiVersion}/checkin`, authMiddleware, checkinRoutes);
 app.use(`/api/${config.apiVersion}/dice`, authMiddleware, diceRoutes);
 app.use(`/api/${config.apiVersion}/dashboard`, authMiddleware, dashboardRoutes);
+app.use(`/api/${config.apiVersion}/night`, authMiddleware, nightRoutes);
+app.use(`/api/${config.apiVersion}/broadcast`, authMiddleware, broadcastRoutes);
+app.use(`/api/${config.apiVersion}/verify`, authMiddleware, verifyRoutes);
+app.use(`/api/${config.apiVersion}/forward`, authMiddleware, forwardRoutes);
+app.use(`/api/${config.apiVersion}/activity`, authMiddleware, activityRoutes);
 
 // API 前向兼容（如果前端用 /api）
 app.use('/api/auth', authRoutes);
@@ -84,6 +93,11 @@ app.use('/api/carousel', authMiddleware, carouselRoutes);
 app.use('/api/checkin', authMiddleware, checkinRoutes);
 app.use('/api/dice', authMiddleware, diceRoutes);
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
+app.use('/api/night', authMiddleware, nightRoutes);
+app.use('/api/broadcast', authMiddleware, broadcastRoutes);
+app.use('/api/verify', authMiddleware, verifyRoutes);
+app.use('/api/forward', authMiddleware, forwardRoutes);
+app.use('/api/activity', authMiddleware, activityRoutes);
 
 // Telegram Webhook（不經過 JWT 驗證）
 app.post('/api/telegram/webhook', express.json(), (req, res) => {

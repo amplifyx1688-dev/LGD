@@ -1,0 +1,82 @@
+src/modules/dice/services/gameService.ts(44,5): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+src/modules/dice/services/gameService.ts(79,3): error TS1128: Declaration or statement expected.
+src/modules/dice/services/gameService.ts(84,3): error TS1128: Declaration or statement expected.
+src/modules/dice/services/gameService.ts(84,27): error TS1005: ';' expected.
+src/modules/dice/services/gameService.ts(84,29): error TS1434: Unexpected keyword or identifier.
+src/modules/dice/services/gameService.ts(94,3): error TS1434: Unexpected keyword or identifier.
+src/modules/dice/services/gameService.ts(94,24): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(94,40): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(94,57): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(94,80): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(94,88): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(94,92): error TS1005: ';' expected.
+src/modules/dice/services/gameService.ts(96,11): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(99,7): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(101,9): error TS1003: Identifier expected.
+src/modules/dice/services/gameService.ts(101,16): error TS1005: '{' expected.
+src/modules/dice/services/gameService.ts(101,22): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(101,49): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(102,13): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(102,47): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(102,55): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(102,94): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(108,17): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(108,23): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(108,34): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(108,42): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(108,93): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(109,13): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(109,53): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(109,61): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(109,112): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(112,11): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(114,7): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(115,19): error TS1005: '{' expected.
+src/modules/dice/services/gameService.ts(115,25): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(115,52): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(118,11): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(125,7): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(127,11): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(127,67): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(129,12): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(129,23): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(135,27): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(135,36): error TS1011: An element access expression should take an argument.
+src/modules/dice/services/gameService.ts(135,38): error TS1005: ';' expected.
+src/modules/dice/services/gameService.ts(159,3): error TS1434: Unexpected keyword or identifier.
+src/modules/dice/services/gameService.ts(159,26): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(159,35): error TS1005: ';' expected.
+src/modules/dice/services/gameService.ts(160,11): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(166,7): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(168,9): error TS1003: Identifier expected.
+src/modules/dice/services/gameService.ts(168,16): error TS1005: '{' expected.
+src/modules/dice/services/gameService.ts(168,22): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(168,49): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(169,13): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(169,89): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(169,91): error TS1136: Property assignment expected.
+src/modules/dice/services/gameService.ts(202,3): error TS1128: Declaration or statement expected.
+src/modules/dice/services/gameService.ts(207,3): error TS1128: Declaration or statement expected.
+src/modules/dice/services/gameService.ts(207,11): error TS1434: Unexpected keyword or identifier.
+src/modules/dice/services/gameService.ts(207,39): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(207,57): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(207,63): error TS1005: ';' expected.
+src/modules/dice/services/gameService.ts(207,77): error TS1109: Expression expected.
+src/modules/dice/services/gameService.ts(209,11): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(209,39): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(210,11): error TS1005: ':' expected.
+src/modules/dice/services/gameService.ts(210,50): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(212,9): error TS1003: Identifier expected.
+src/modules/dice/services/gameService.ts(212,21): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(212,37): error TS1005: ';' expected.
+src/modules/dice/services/gameService.ts(260,3): error TS1128: Declaration or statement expected.
+src/modules/dice/services/gameService.ts(266,3): error TS1128: Declaration or statement expected.
+src/modules/dice/services/gameService.ts(266,32): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(266,43): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(266,49): error TS1005: ';' expected.
+src/modules/dice/services/gameService.ts(266,51): error TS1434: Unexpected keyword or identifier.
+src/modules/dice/services/gameService.ts(282,3): error TS1434: Unexpected keyword or identifier.
+src/modules/dice/services/gameService.ts(282,30): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(282,45): error TS1005: ',' expected.
+src/modules/dice/services/gameService.ts(282,60): error TS1005: ';' expected.
+src/modules/dice/services/gameService.ts(306,1): error TS1128: Declaration or statement expected.

@@ -5,7 +5,7 @@
 
 import { prisma } from '@/core/database/client';
 import { logger } from '@/core/utils/logger';
-import { DICE_CONSTANTS, DEFAULT_MULTIPLIERS } from '@/shared/constants';
+import { DICE_CONSTANTS, DEFAULT_MULTIPLIERS, RANK_ORDER } from '@/shared/constants';
 import { DiceGameStatus, DiceGameType } from '@metricgram/shared-types';
 
 export interface CreateGameParams {
@@ -18,9 +18,6 @@ export interface CreateGameParams {
 
 export class DiceService {
   /**
-   * 創建房間
-   */
-  /**
    * 從群組設定中獲取骰子配置（帶預設值）
    */
   private getDiceSettings(group: any): {
@@ -30,9 +27,8 @@ export class DiceService {
     maxBet: number;
     allowDoubleBet: boolean;
   } {
-    // 優先使用群組設定， fallback 到全局常量
     const settings = group.diceSettings || {};
-    
+
     return {
       commissionRate: settings.commissionRate ?? DICE_CONSTANTS.COMMISSION_RATE,
       multipliers: settings.multipliers ?? DEFAULT_MULTIPLIERS,
@@ -41,6 +37,21 @@ export class DiceService {
       allowDoubleBet: settings.allowDoubleBet ?? false
     };
   }
+
+  /**
+   * 生成房間號（格式：ROOM_YYYYMMDD_001）
+   */
+  private generateRoomId(): string {
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `ROOM_${dateStr}_${random}`;
+  }
+
+  /**
+   * 創建房間
+   */
+  async createRoom(params: CreateGameParams): Promise<any> {
     const {
       hostId,
       groupId,
@@ -51,7 +62,7 @@ export class DiceService {
 
     // 1. 生成房間號（可自定義格式）
     const roomId = this.generateRoomId();
-    
+
     // 2. 創建記錄
     const game = await prisma.diceGame.create({
       data: {
@@ -79,16 +90,6 @@ export class DiceService {
   }
 
   /**
-   * 生成房間號（格式：ROOM_YYYYMMDD_001）
-   */
-  private generateRoomId(): string {
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `ROOM_${dateStr}_${random}`;
-  }
-
-  /**
    * 加入房間
    */
   async joinGame(gameId: number, userId: number, betUsdt: number, betMultiplier: 1 | 2 = 1): Promise<any> {
@@ -100,7 +101,7 @@ export class DiceService {
 
     if (!game) throw new Error('Game not found');
     if (game.status !== DiceGameStatus.WAITING) throw new Error('Game not accepting players');
-    
+
     // 2. 檢查黑名單
     // TODO
 
@@ -190,14 +191,14 @@ export class DiceService {
     // 4. 關閉遊戲
     await prisma.diceGame.update({
       where: { id: gameId },
-      data: { 
+      data: {
         status: DiceGameStatus.CLOSED,
         closedAt: new Date()
       }
     });
 
     logger.info('Game settled', { gameId });
-    
+
     return { success: true };
   }
 
@@ -252,10 +253,10 @@ export class DiceService {
       }
     });
 
-    logger.info('Participant settled', { 
-      gameId: game.id, 
-      userId: participant.userId, 
-      result 
+    logger.info('Participant settled', {
+      gameId: game.id,
+      userId: participant.userId,
+      result
     });
   }
 
@@ -264,14 +265,12 @@ export class DiceService {
    * true = 閒家贏，false = 莊家贏
    */
   private compareResults(player: any, host: any): boolean {
-    const { RANK_ORDER } = require('@/shared/constants');
-    
     const playerIndex = RANK_ORDER.indexOf(player.type);
     const hostIndex = RANK_ORDER.indexOf(host.type);
 
     if (playerIndex < hostIndex) return true; // index 越小牌越大
     if (playerIndex > hostIndex) return false;
-    
+
     // 牌型相同 → 比點數
     return player.remainder > host.remainder;
   }
@@ -302,6 +301,59 @@ export class DiceService {
       payout: p.payoutUsdt || 0,
       time: p.joinedAt
     }));
+  }
+
+  /**
+   * 擲骰子
+   */
+  async rollDice(gameId: number, userId: number, diceValues: number[]): Promise<any> {
+    // 1. 驗證遊戲
+    const game = await prisma.diceGame.findUnique({
+      where: { id: gameId },
+      include: ['host', 'participants']
+    });
+
+    if (!game) throw new Error('Game not found');
+
+    // 2. 確定是莊家還是閒家擲骰
+    const isHost = game.hostUserId === userId;
+    if (!isHost) {
+      // 閒家擲骰
+      const participant = await prisma.diceParticipant.findUnique({
+        where: { gameId_userId: { gameId, userId } }
+      });
+      if (!participant) throw new Error('Player not in game');
+
+      // 更新閒家骰子結果
+      const result = this.calculateDiceResult(diceValues);
+
+      await prisma.diceParticipant.update({
+        where: { id: participant.id },
+        data: {
+          diceJson: diceValues,
+          playerResult: result
+        }
+      });
+
+      logger.info('Player rolled dice', { gameId, userId, result });
+
+      return { result, isHost: false };
+    } else {
+      // 莊家擲骰
+      const result = this.calculateDiceResult(diceValues);
+
+      await prisma.diceGame.update({
+        where: { id: gameId },
+        data: {
+          hostDiceJson: diceValues,
+          hostResult: result
+        }
+      });
+
+      logger.info('Host rolled dice', { gameId, result });
+
+      return { result, isHost: true };
+    }
   }
 }
 

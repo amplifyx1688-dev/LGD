@@ -96,16 +96,18 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  groups               Group[]
-  ownedGroups          Group[]            @relation("GroupOwner")
-  checkins             Checkin[]
-  pointsTransactions   PointsTransaction[]
-  walletTransactions   WalletTransaction[]
-  wallet               UserWallet?
-  diceGamesAsHost      DiceGame[]         @relation("HostGames")
-  diceParticipations   DiceParticipant[]
-  wheelSpins          WheelSpin[]
+   // Relations
+   groups               Group[]
+   ownedGroups          Group[]            @relation("GroupOwner")
+   checkins             Checkin[]
+   pointsTransactions   PointsTransaction[]
+   walletTransactions   WalletTransaction[]
+   wallet               UserWallet?
+   diceGamesAsHost      DiceGame[]         @relation("HostGames")
+   diceParticipations   DiceParticipant[]
+   wheelSpins          WheelSpin[]
+   verifications       Verification[]
+   activityParticipations ActivityParticipant[]
 }
 
 // ============================================
@@ -130,6 +132,9 @@ model Group {
   // 輪播設置
   carouselSettings   Json      @db.Json @default("{\"intervalSeconds\":5,\"startIndex\":0,\"enabledChannels\":[\"ad\",\"chat\",\"checkin\"]}")
 
+  // 夜間設置
+  nightSettings      Json      @db.Json @default("{\"enabled\":false,\"startTime\":\"22:00\",\"endTime\":\"06:00\",\"muteModules\":[\"broadcast\",\"carousel\"],\"allowAdminOverride\":true}")
+
   // 驗證設置
   verifyJoinEnabled      Boolean @default(false)
   verifyPrivateEnabled   Boolean @default(false)
@@ -152,7 +157,7 @@ model Group {
   // 骰子設置
   diceEnabled            Boolean @default(false)
 
-  isActive               Boolean @default(true)
+  isActive               Boolean  @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -164,6 +169,8 @@ model Group {
   diceGames             DiceGame[]
   carouselContents      CarouselContent[]
   wheelSpins           WheelSpin[]
+  verifications        Verification[]
+  forwardKeywords      ForwardKeyword[] // 關鍵詞規則
 }
 
 // ============================================
@@ -403,6 +410,31 @@ model ButtonHandler {
 }
 
 // ============================================
+// 11. VERIFICATIONS - 驗證記錄
+// ============================================
+model Verification {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  groupId       Int?
+  type          String   // join/private/channel
+  code          String   // 4-6位數字
+  isUsed        Boolean  @default(false)
+  verifiedAt    DateTime?
+  expiresAt     DateTime
+
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id])
+  group         Group?  @relation(fields: [groupId], references: [id])
+
+  @@index([userId])
+  @@index([groupId])
+  @@index([code])
+  @@index([isUsed])
+  @@index([expiresAt])
+}
+
+// ============================================
 // 11. SCHEDULED_TASKS - 定時任務
 // ============================================
 model ScheduledTask {
@@ -521,4 +553,74 @@ model WheelSpin {
 
   user  User @relation(fields: [userId], references: [id])
   group Group @relation(fields: [groupId], references: [id])
+}
+
+// ============================================
+// 16. FORWARD_KEYWORDS - 關鍵詞自動處理規則
+// ============================================
+model ForwardKeyword {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  keyword   String   // 觸發關鍵詞
+  action    String   // 'forward' | 'reply' | 'ban' | 'delete'
+  target    String?  // 轉發目標 chatId，或回覆內容
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, keyword])
+  @@index([keyword])
+  @@index([groupId])
+}
+
+// ============================================
+// 17. ACTIVITIES - 活動管理
+// ============================================
+model Activity {
+  id          Int      @id @default(autoincrement())
+  title       String
+  type        ActivityType
+  startDate   DateTime
+  endDate     DateTime
+  rules       Json     @db.Json
+  rewards     Json     @db.Json
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  participants ActivityParticipant[]
+
+  @@index([type])
+  @@index([isActive])
+  @@index([startDate, endDate])
+}
+
+model ActivityParticipant {
+  id          Int      @id @default(autoincrement())
+  activityId  Int
+  userId      Int
+  progress    Json     @db.Json @default("{}") // 進度數據
+  joinedAt    DateTime @default(now())
+  completedAt DateTime?
+  rewardGiven Boolean  @default(false)
+
+  activity    Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, userId])
+  @@index([userId])
+  @@index([activityId])
+  @@index([completedAt])
+}
+
+enum ActivityType {
+  lottery
+  streak
+  ranking
+  accumulative
 }

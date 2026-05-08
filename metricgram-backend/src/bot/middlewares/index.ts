@@ -2,6 +2,8 @@ import { Context } from 'telegraf';
 import { bot, sendHtmlMessage, editHtmlMessage } from '../index';
 import { logger } from '@/core/utils/logger';
 import { prisma } from '@/core/database/client';
+import { verifyService } from '@/modules/verify/service';
+import { forwardService } from '@/modules/forward/service';
 
 /**
  * 消息 Middleware
@@ -17,15 +19,65 @@ export async function messageMiddleware(ctx: Context, next: () => Promise<void>)
     });
   }
 
-  // 2. 檢查群組是否啟用對應模塊（基礎過濾）
+  // 2. 處理私聊中的驗證碼
+  if (ctx.chat?.type === 'private' && ctx.message?.text) {
+    const text = ctx.message.text.trim();
+    const userId = ctx.from!.id;
+
+    // 檢查是否為 4-6 位數字（驗證碼）
+    if (/^\d{4,6}$/.test(text)) {
+      const result = await verifyService.verifyCode(userId, text);
+
+      if (result.success) {
+        // 驗證成功
+        if (result.verification?.groupId) {
+          const group = await prisma.group.findUnique({
+            where: { id: result.verification.groupId }
+          });
+
+          if (group) {
+            try {
+              // 通知群組
+              await bot.telegram.sendMessage(
+                group.telegramChatId,
+                `✅ 用戶 ${ctx.from!.first_name} 已通過驗證`
+              );
+
+              // 解除禁言
+              try {
+                await bot.telegram.unbanChatMember(
+                  group.telegramChatId,
+                  userId,
+                  true
+                );
+                logger.info('User unbanned', { userId, groupId: result.verification.groupId });
+              } catch (unbanError) {
+                logger.warn('Failed to unban user', { userId, error: unbanError });
+              }
+            } catch (error) {
+              logger.error('Failed to send group notification', { error });
+            }
+          }
+        }
+
+        await ctx.reply('✅ 驗證成功！');
+        return;
+      } else {
+        // 驗證失敗，繼續其他處理
+        logger.debug('Verification code mismatch', { userId });
+      }
+    }
+  }
+
+  // 3. 檢查群組是否啟用對應模塊（基礎過濾）
   if (ctx.chat?.type === 'group' || ctx.chat?.type === 'supergroup') {
     const group = await prisma.group.findFirst({
       where: { telegramChatId: ctx.chat.id }
     });
-    
+
     if (group) {
       ctx.groupDb = group;
-      
+
       // 全局禁用檢查
       if (!group.isActive) {
         return next();
@@ -33,17 +85,20 @@ export async function messageMiddleware(ctx: Context, next: () => Promise<void>)
     }
   }
 
-  // 3. 處理骰子消息（獲取 Telegram 骰子數值）
+  // 4. 處理骰子消息（獲取 Telegram 骰子數值）
   if (ctx.message?.dice) {
     // TODO: 轉發給骰子模塊處理
-    // await diceService.handleDiceMessage(ctx);
     return next();
   }
 
-  // 4. 處理普通文本消息（關鍵詞觸發）
+  // 5. 處理普通文本消息（關鍵詞觸發）
   if (ctx.message?.text) {
-    // TODO: 關鍵詞檢測與轉發
-    // await forwardService.checkKeywords(ctx);
+    // 關鍵詞檢測與轉發
+    // 如果返回 true，表示動作已執行（如 ban/delete），停止後續處理
+    const prevented = await forwardService.checkKeywords(ctx);
+    if (prevented) {
+      return;
+    }
   }
 
   return next();
